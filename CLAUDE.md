@@ -111,5 +111,24 @@ scope — flagged instead of silently changing per project rules):
   (pydantic-settings ignores unknown env vars by default), but worth
   cleaning up in a later docs/CI pass.
 
-Next: Step 2 — add Company/Contact/EnrichmentJob/WaterfallConfig models
-+ Alembic migration.
+Step 2 done: added the 4 target models as vertical-slice modules under
+src/modules/ — companies/models.py, contacts/models.py (+ enums.py for
+EnrichmentStatus), enrichment_jobs/models.py (+ enums.py for JobStatus),
+waterfall_config/models.py. FieldType (email/phone/company) lives in
+modules/common/enums.py since both EnrichmentJob and WaterfallConfig
+need it. WaterfallConfig has a unique constraint on
+(field_type, provider_name) so a provider can't be double-entered in
+one field's priority order. Registered all 4 in modules/__init__.py for
+SQLAlchemy/Alembic discovery.
+
+Generated the first Alembic migration (dfae5d3bb7b7) via autogenerate.
+No Postgres available in this environment, so verified it against a
+throwaway SQLite db (DATABASE_URL=sqlite+aiosqlite:///./gtm_test.db):
+upgrade → inspected schema (matches the target data model exactly) →
+downgrade → upgrade again, all clean. Settings has no permanent SQLite
+fallback wired in — that env var was only for this one-off migration
+test, not a code change. Full unit suite still 79 passed/3 skipped,
+ruff clean, app boots.
+
+Next: Step 3 — build the waterfall enrichment service with stubbed
+providers (mock mode when no API key is set).

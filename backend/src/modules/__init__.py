@@ -1,7 +1,13 @@
-"""Initialize all modules and models to ensure SQLAlchemy registration.
+"""Initialize all modules and models to ensure SQLAlchemy registration."""
 
-GTM domain models (Company, Contact, EnrichmentJob, WaterfallConfig) get
-imported here in the next build step so Alembic autogenerate can see them.
-"""
+from .companies.models import Company
+from .contacts.models import Contact
+from .enrichment_jobs.models import EnrichmentJob
+from .waterfall_config.models import WaterfallConfig
 
-__all__: list[str] = []
+__all__ = [
+    "Company",
+    "Contact",
+    "EnrichmentJob",
+    "WaterfallConfig",
+]
