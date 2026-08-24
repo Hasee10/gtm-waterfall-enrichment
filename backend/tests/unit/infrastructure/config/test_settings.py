@@ -16,7 +16,6 @@ class TestSettings:
         settings = Settings()
         assert settings is not None
         assert hasattr(settings, "DATABASE_URL")
-        assert hasattr(settings, "SECRET_KEY")
 
     def test_get_settings_singleton(self):
         """Test that get_settings returns the same instance."""
@@ -24,11 +23,11 @@ class TestSettings:
         settings2 = get_settings()
         assert settings1 is settings2
 
-    @patch.dict(os.environ, {"SECRET_KEY": "test_secret_key"})
+    @patch.dict(os.environ, {"APP_NAME": "test_app_name"})
     def test_settings_from_env(self):
         """Test loading settings from environment variables."""
         settings = Settings()
-        assert settings.SECRET_KEY == "test_secret_key"
+        assert settings.APP_NAME == "test_app_name"
 
     def test_database_url_format(self):
         """Test database URL format validation."""
@@ -73,7 +72,7 @@ class TestSettings:
         # Core required settings
         required_attrs = [
             "DATABASE_URL",
-            "SECRET_KEY",
+            "APP_NAME",
         ]
 
         for attr in required_attrs:

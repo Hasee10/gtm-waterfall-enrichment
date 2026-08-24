@@ -1,15 +1,7 @@
-"""Initialize all modules and models to ensure SQLAlchemy registration."""
+"""Initialize all modules and models to ensure SQLAlchemy registration.
 
-from .api_keys.models import APIKey, KeyPermission, KeyUsage
-from .rate_limit.models import RateLimit
-from .tier.models import Tier
-from .user.models import User
+GTM domain models (Company, Contact, EnrichmentJob, WaterfallConfig) get
+imported here in the next build step so Alembic autogenerate can see them.
+"""
 
-__all__ = [
-    "User",
-    "Tier",
-    "RateLimit",
-    "APIKey",
-    "KeyUsage",
-    "KeyPermission",
-]
+__all__: list[str] = []

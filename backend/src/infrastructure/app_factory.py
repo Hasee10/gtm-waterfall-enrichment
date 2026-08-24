@@ -14,22 +14,17 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
 from ..modules.common.utils.error_handler import register_exception_handlers
-from .auth.dependencies import get_current_superuser
-from .auth.setup import auth
 from .cache.initialize import close_cache, initialize_cache
 from .config.settings import (
     CacheSettings,
     DatabaseSettings,
     EnvironmentOption,
     EnvironmentSettings,
-    RateLimiterSettings,
     Settings,
     get_settings,
 )
 from .database.session import create_tables
 from .middleware import ClientCacheMiddleware, SecurityHeadersMiddleware
-from .rate_limit.initialize import close_rate_limiter, initialize_rate_limiter
-from .rate_limit.middleware import RateLimiterMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -60,23 +55,13 @@ def lifespan_factory(
             if isinstance(settings, CacheSettings) and settings.CACHE_ENABLED:
                 await initialize_cache()
 
-            if isinstance(settings, RateLimiterSettings) and settings.RATE_LIMITER_ENABLED:
-                await initialize_rate_limiter()
-
-            await auth.initialize()
-
             initialization_complete.set()
 
             yield
 
         finally:
-            await auth.shutdown()
-
             if isinstance(settings, CacheSettings) and settings.CACHE_ENABLED:
                 await close_cache()
-
-            if isinstance(settings, RateLimiterSettings) and settings.RATE_LIMITER_ENABLED:
-                await close_rate_limiter()
 
     return lifespan
 
@@ -259,9 +244,6 @@ def create_application(
 
     application.include_router(router)
 
-    if isinstance(settings, RateLimiterSettings) and settings.RATE_LIMITER_ENABLED:
-        application.add_middleware(RateLimiterMiddleware)
-
     if isinstance(settings, CacheSettings) and settings.CACHE_ENABLED and hasattr(settings, "CLIENT_CACHE_ENABLED"):
         if settings.CLIENT_CACHE_ENABLED:
             client_cache_max_age = getattr(settings, "CLIENT_CACHE_MAX_AGE", 60)
@@ -298,25 +280,11 @@ def create_application(
     )
 
     if show_docs:
+        # No auth stack in this project, so docs are open by default. A caller can
+        # still pass docs_production_dependency to gate them behind something else.
         docs_router = APIRouter()
-
-        is_production = isinstance(settings, EnvironmentSettings) and settings.ENVIRONMENT == EnvironmentOption.PRODUCTION
-        is_local = isinstance(settings, EnvironmentSettings) and settings.ENVIRONMENT == EnvironmentOption.LOCAL
-
-        apply_dependency = False
-        dependency_to_apply = None
-
-        if is_production and _enable_docs_in_production:
-            apply_dependency = True
-            dependency_to_apply = (
-                docs_production_dependency if docs_production_dependency is not None else get_current_superuser
-            )
-        elif not is_local and not is_production:
-            apply_dependency = True
-            dependency_to_apply = get_current_superuser
-
-        if apply_dependency and dependency_to_apply is not None:
-            docs_router = APIRouter(dependencies=[Depends(dependency_to_apply)])
+        if docs_production_dependency is not None:
+            docs_router = APIRouter(dependencies=[Depends(docs_production_dependency)])
 
         @docs_router.get("/docs", include_in_schema=False)
         async def get_swagger_documentation() -> fastapi.responses.HTMLResponse:

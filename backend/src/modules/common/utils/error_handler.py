@@ -8,15 +8,10 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from ....infrastructure.auth.http_exceptions import (
-    HTTPException,
-)
 from ....infrastructure.logging import get_logger
 from ..constants import EXCEPTION_MAPPING, GENERIC_ERROR_MESSAGE, SUPPORT_ID_LENGTH
-from ..exceptions import (
-    DomainError,
-    InsufficientCreditsError,
-)
+from ..exceptions import DomainError
+from ..http_exceptions import HTTPException
 
 logger = get_logger()
 
@@ -55,8 +50,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     """Register global exception handlers for domain and validation exceptions.
 
     All handlers log full details server-side and return only a generic message
-    + support_id to the client. Exception: InsufficientCreditsError (402) keeps
-    its message since the frontend needs the credit info for upgrade prompts.
+    + support_id to the client, so internal details never leak to API consumers.
     """
     app.add_middleware(CatchAllErrorMiddleware)
 
@@ -73,13 +67,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def domain_exception_handler(request: Request, exc: DomainError) -> JSONResponse:
         support_id = _generate_support_id()
         http_exception = map_exception(exc)
-
-        if isinstance(exc, InsufficientCreditsError):
-            logger.info(f"Insufficient credits [{support_id}] on {request.method} {request.url.path}: {exc}")
-            return JSONResponse(
-                status_code=http_exception.status_code,
-                content={"detail": http_exception.detail, "support_id": support_id},
-            )
 
         logger.warning(f"Domain error [{support_id}] on {request.method} {request.url.path}: {type(exc).__name__}: {exc}")
         return JSONResponse(

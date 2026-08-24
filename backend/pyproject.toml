@@ -3,10 +3,9 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fastapi-boilerplate"
-version = "0.19.0"
-description = "Modular FastAPI starter — vertical slices, swappable infrastructure, plugin-ready."
-authors = [{ name = "Benav Labs", email = "contact@benav.io" }]
+name = "gtm-waterfall-enrichment"
+version = "0.1.0"
+description = "Self-hosted lead enrichment waterfall + CRM sync engine."
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,7 +14,6 @@ dependencies = [
     "aiosqlite>=0.21.0",
     "alembic>=1.16.4",
     "asyncpg>=0.30.0",
-    "crudauth[all]>=0.6.0,<0.7.0",
     "faker>=37.1.0",
     "fastapi[standard]>=0.115.8",
     "fastcrud>=0.21.0",
@@ -26,12 +24,10 @@ dependencies = [
     "pydantic>=2.10.6",
     "pydantic-settings>=2.7.1",
     "redis>=6.1.0",
-    "sqladmin>=0.22.0",
     "sqlalchemy>=2.0.37",
     "taskiq>=0.11.20",
     "taskiq-redis>=1.1.2",
     "taskiq-aio-pika>=0.4.3",
-    "user-agents>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -84,22 +80,6 @@ explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = "aiomcache"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "user_agents"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "sqladmin"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "sqladmin.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "wtforms.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

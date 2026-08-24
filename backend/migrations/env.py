@@ -34,7 +34,7 @@ def validate_production_migration():
             )
 
         # Check for required production environment variables
-        required_vars = ["DATABASE_URL", "SECRET_KEY"]
+        required_vars = ["DATABASE_URL"]
         missing_vars = [var for var in required_vars if not os.getenv(var)]
         if missing_vars:
             raise Exception(f"Missing required production environment variables: {missing_vars}")

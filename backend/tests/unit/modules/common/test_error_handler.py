@@ -6,7 +6,6 @@ from httpx import ASGITransport, AsyncClient
 
 from src.modules.common.constants import GENERIC_ERROR_MESSAGE
 from src.modules.common.exceptions import (
-    InsufficientCreditsError,
     ResourceNotFoundError,
     ValidationError,
 )
@@ -41,10 +40,6 @@ def _create_test_app() -> FastAPI:
     async def raise_validation():
         raise ValidationError("name must be at least 2 chars")
 
-    @app.get("/credits")
-    async def raise_credits():
-        raise InsufficientCreditsError("You need 50 more credits")
-
     @app.get("/unhandled")
     async def raise_unhandled():
         raise RuntimeError("unexpected internal failure")
@@ -72,18 +67,6 @@ async def test_domain_error_returns_generic_message(test_app):
 
 
 @pytest.mark.asyncio
-async def test_insufficient_credits_preserves_message(test_app):
-    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.get("/credits")
-
-    assert response.status_code == 402
-    body = response.json()
-    # InsufficientCreditsError SHOULD keep its message
-    assert "50 more credits" in body["detail"]
-    assert "support_id" in body
-
-
-@pytest.mark.asyncio
 async def test_unhandled_error_returns_generic_500(test_app):
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.get("/unhandled")
@@ -103,14 +86,6 @@ def test_map_exception_not_found_uses_generic_detail():
     assert "User 42" not in http_exc.detail
     assert "secret" not in http_exc.detail
     assert "not found" in http_exc.detail.lower()
-
-
-def test_map_exception_insufficient_credits_preserves_detail():
-    """InsufficientCreditsError must keep its message for frontend upgrade prompts."""
-    exc = InsufficientCreditsError("You need 50 more credits")
-    http_exc = map_exception(exc)
-    assert http_exc.status_code == 402
-    assert "50 more credits" in http_exc.detail
 
 
 def test_handle_exception_returns_generic_for_domain_errors():

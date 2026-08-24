@@ -6,7 +6,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings
 from starlette.config import Config
 
-from .enums import CacheBackend, LogFormat, LogLevel, SessionBackend, TaskiqBrokerType
+from .enums import CacheBackend, LogFormat, LogLevel, TaskiqBrokerType
 
 logger = logging.getLogger(__name__)
 
@@ -132,54 +132,6 @@ class CacheSettings(BaseSettings):
     CLIENT_CACHE_MAX_AGE: int = config("CLIENT_CACHE_MAX_AGE", default=60, cast=int)
 
 
-class RateLimiterSettings(BaseSettings):
-    """Rate limiter settings.
-
-    This class defines settings for rate limiting connections and behavior across
-    the application.
-
-    Attributes:
-        RATE_LIMITER_ENABLED: Whether to enable rate limiting. Default is True.
-        RATE_LIMITER_BACKEND: The rate limiter backend to use. Default is "memcached".
-        RATE_LIMITER_FAIL_OPEN: Whether to fail open (allow requests) when errors occur. Default is True.
-
-        # Default rate limit settings
-        DEFAULT_RATE_LIMIT_LIMIT: Default number of requests allowed. Default is 100.
-        DEFAULT_RATE_LIMIT_PERIOD: Default period in seconds. Default is 60.
-
-        # Memcached settings
-        RATE_LIMITER_MEMCACHED_HOST: Memcached server hostname. Default is "localhost".
-        RATE_LIMITER_MEMCACHED_PORT: Memcached server port. Default is 11211.
-        RATE_LIMITER_MEMCACHED_POOL_SIZE: Maximum number of connections in the pool. Default is 10.
-
-        # Redis settings
-        RATE_LIMITER_REDIS_HOST: Redis server hostname. Default is "localhost".
-        RATE_LIMITER_REDIS_PORT: Redis server port. Default is 6379.
-        RATE_LIMITER_REDIS_DB: Redis database number. Default is 1.
-        RATE_LIMITER_REDIS_PASSWORD: Redis server password. Default is None.
-        RATE_LIMITER_REDIS_CONNECT_TIMEOUT: Connection timeout in seconds. Default is 5.
-        RATE_LIMITER_REDIS_POOL_SIZE: Maximum number of connections in the pool. Default is 10.
-    """
-
-    RATE_LIMITER_ENABLED: bool = config("RATE_LIMITER_ENABLED", default=True, cast=bool)
-    RATE_LIMITER_BACKEND: str = config("RATE_LIMITER_BACKEND", default=CacheBackend.MEMCACHED.value)
-    RATE_LIMITER_FAIL_OPEN: bool = config("RATE_LIMITER_FAIL_OPEN", default=True, cast=bool)
-
-    DEFAULT_RATE_LIMIT_LIMIT: int = config("DEFAULT_RATE_LIMIT_LIMIT", default=100, cast=int)
-    DEFAULT_RATE_LIMIT_PERIOD: int = config("DEFAULT_RATE_LIMIT_PERIOD", default=60, cast=int)
-
-    RATE_LIMITER_MEMCACHED_HOST: str = config("RATE_LIMITER_MEMCACHED_HOST", default="localhost")
-    RATE_LIMITER_MEMCACHED_PORT: int = config("RATE_LIMITER_MEMCACHED_PORT", default=11211, cast=int)
-    RATE_LIMITER_MEMCACHED_POOL_SIZE: int = config("RATE_LIMITER_MEMCACHED_POOL_SIZE", default=10, cast=int)
-
-    RATE_LIMITER_REDIS_HOST: str = config("RATE_LIMITER_REDIS_HOST", default="localhost")
-    RATE_LIMITER_REDIS_PORT: int = config("RATE_LIMITER_REDIS_PORT", default=6379, cast=int)
-    RATE_LIMITER_REDIS_DB: int = config("RATE_LIMITER_REDIS_DB", default=1, cast=int)
-    RATE_LIMITER_REDIS_PASSWORD: str | None = config("RATE_LIMITER_REDIS_PASSWORD", default=None)
-    RATE_LIMITER_REDIS_CONNECT_TIMEOUT: int = config("RATE_LIMITER_REDIS_CONNECT_TIMEOUT", default=5, cast=int)
-    RATE_LIMITER_REDIS_POOL_SIZE: int = config("RATE_LIMITER_REDIS_POOL_SIZE", default=10, cast=int)
-
-
 class CORSSettings(BaseSettings):
     """CORS-related settings."""
 
@@ -231,31 +183,6 @@ class APIDocSettings(BaseSettings):
     API_TAGS_METADATA: str = config("API_TAGS_METADATA", default="[]")
 
 
-class AuthSettings(BaseSettings):
-    """Authentication-related settings."""
-
-    SECRET_KEY: str = config("SECRET_KEY", default="insecure-secret-key-change-this")
-
-    SESSION_TIMEOUT_MINUTES: int = config("SESSION_TIMEOUT_MINUTES", default=30, cast=int)
-    SESSION_CLEANUP_INTERVAL_MINUTES: int = config("SESSION_CLEANUP_INTERVAL_MINUTES", default=15, cast=int)
-    MAX_SESSIONS_PER_USER: int = config("MAX_SESSIONS_PER_USER", default=5, cast=int)
-    SESSION_SECURE_COOKIES: bool = config("SESSION_SECURE_COOKIES", default=True, cast=bool)
-    SESSION_BACKEND: str = config("SESSION_BACKEND", default=SessionBackend.REDIS.value)
-
-    CSRF_ENABLED: bool = config("CSRF_ENABLED", default=True, cast=bool)
-
-    # Number of trusted reverse proxies in front of the app. crudauth resolves the
-    # client IP for login lockout from the last hop of X-Forwarded-For; 0 = the socket
-    # peer (no proxy). Set to 1 behind a single nginx/Caddy, 2 if Cloudflare is also in front.
-    TRUSTED_PROXY_HOPS: int = config("TRUSTED_PROXY_HOPS", default=0, cast=int)
-
-    OAUTH_GOOGLE_CLIENT_ID: str = config("OAUTH_GOOGLE_CLIENT_ID", default="")
-    OAUTH_GOOGLE_CLIENT_SECRET: str = config("OAUTH_GOOGLE_CLIENT_SECRET", default="")
-    OAUTH_GITHUB_CLIENT_ID: str = config("OAUTH_GITHUB_CLIENT_ID", default="")
-    OAUTH_GITHUB_CLIENT_SECRET: str = config("OAUTH_GITHUB_CLIENT_SECRET", default="")
-    OAUTH_REDIRECT_BASE_URL: str = config("OAUTH_REDIRECT_BASE_URL", default="http://localhost:8000")
-
-
 class APISettings(BaseSettings):
     """API-related settings."""
 
@@ -266,36 +193,18 @@ class AppSettings(BaseSettings):
     """Application-related settings."""
 
     # Note: For API documentation, prefer using API_* fields in APIDocSettings
-    APP_NAME: str = config("APP_NAME", default="FastAPI Boilerplate")
-    APP_DESCRIPTION: str = config("APP_DESCRIPTION", default="Modular FastAPI starter")
+    APP_NAME: str = config("APP_NAME", default="GTM Waterfall Enrichment")
+    APP_DESCRIPTION: str = config("APP_DESCRIPTION", default="Self-hosted lead enrichment waterfall + CRM sync engine")
     DEBUG: bool = config("DEBUG", default=False, cast=bool)
     VERSION: str = config("VERSION", default="0.1.0")
     CONTACT_NAME: str = config("CONTACT_NAME", default="Support")
     CONTACT_EMAIL: str = config("CONTACT_EMAIL", default="support@example.com")
-    LICENSE_NAME: str = config("LICENSE_NAME", default="All rights reserved.")
-
-
-class AdminSettings(BaseSettings):
-    """Admin user settings for initial setup."""
-
-    ADMIN_NAME: str = config("ADMIN_NAME", default="")
-    ADMIN_EMAIL: str = config("ADMIN_EMAIL", default="")
-    ADMIN_USERNAME: str = config("ADMIN_USERNAME", default="")
-    ADMIN_PASSWORD: str = config("ADMIN_PASSWORD", default="")
-    DEFAULT_TIER_NAME: str = config("DEFAULT_TIER_NAME", default="free")
-
-
-class SQLAdminSettings(BaseSettings):
-    """SQLAdmin interface settings."""
-
-    ADMIN_ENABLED: bool = config("ADMIN_ENABLED", default=True, cast=bool)
+    LICENSE_NAME: str = config("LICENSE_NAME", default="MIT")
 
 
 class SecuritySettings(BaseSettings):
-    """Security validation settings."""
+    """Security settings."""
 
-    PRODUCTION_SECURITY_VALIDATION_ENABLED: bool = config("PRODUCTION_SECURITY_VALIDATION_ENABLED", default=True, cast=bool)
-    PRODUCTION_SECURITY_STRICT_MODE: bool = config("PRODUCTION_SECURITY_STRICT_MODE", default=False, cast=bool)
     SECURITY_HEADERS_ENABLED: bool = config("SECURITY_HEADERS_ENABLED", default=True, cast=bool)
 
 
@@ -373,15 +282,11 @@ class Settings(
     EnvironmentSettings,
     DatabaseSettings,
     CacheSettings,
-    RateLimiterSettings,
     CORSSettings,
     CompressionSettings,
     APIDocSettings,
-    AuthSettings,
     APISettings,
     AppSettings,
-    AdminSettings,
-    SQLAdminSettings,
     SecuritySettings,
     LoggingSettings,
     TaskiqSettings,

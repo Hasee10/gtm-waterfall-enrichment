@@ -6,21 +6,11 @@ from enum import StrEnum
 class CacheBackend(StrEnum):
     """Cache backend types.
 
-    Supported backends for caching and rate limiting.
+    Supported backends for caching.
     """
 
     REDIS = "redis"
     MEMCACHED = "memcached"
-    MEMORY = "memory"
-
-
-class SessionBackend(StrEnum):
-    """Session storage backend types.
-
-    Supported backends for session storage (crudauth supports redis and memory only).
-    """
-
-    REDIS = "redis"
     MEMORY = "memory"
 
 
