@@ -13,9 +13,11 @@ from src.modules.common.enums import FieldType
 from src.modules.common.exceptions import ResourceNotFoundError, ValidationError
 from src.modules.contacts.enums import EnrichmentStatus
 from src.modules.contacts.service import ContactService
+from src.modules.icp_config.models import ICPConfig
 from src.modules.waterfall_config.models import WaterfallConfig
 from src.services.enrichment.waterfall import WaterfallEnrichmentService
 from src.services.providers.base import ProviderResult
+from src.services.scoring.icp import ICPScoringService
 
 SAMPLE_CSV = (
     "first_name,last_name,email,title,company_domain,company_name\n"
@@ -134,3 +136,40 @@ async def test_enrich_with_no_waterfall_config_returns_no_jobs(db_session):
 
     assert outcome.jobs == []
     assert outcome.contact.enrichment_status == EnrichmentStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_score_raises_for_missing_contact(db_session):
+    service = ContactService()
+    with pytest.raises(ResourceNotFoundError):
+        await service.score(db_session, 999, ICPScoringService())
+
+
+@pytest.mark.asyncio
+async def test_score_raises_validation_error_when_no_active_config(db_session):
+    service = ContactService()
+    imported = await service.bulk_create_from_csv(db_session, SAMPLE_CSV.encode("utf-8"))
+    contact_id = imported.contacts[0].id
+
+    with pytest.raises(ValidationError):
+        await service.score(db_session, contact_id, ICPScoringService())
+
+
+@pytest.mark.asyncio
+async def test_score_persists_result_onto_contact(db_session):
+    service = ContactService()
+    imported = await service.bulk_create_from_csv(db_session, SAMPLE_CSV.encode("utf-8"))
+    contact_id = imported.contacts[0].id
+
+    db_session.add(ICPConfig(enabled=True, title_keywords="VP,Director", title_weight=50.0))
+    await db_session.commit()
+
+    outcome = await service.score(db_session, contact_id, ICPScoringService())
+
+    assert outcome.contact.icp_score == 100.0
+    assert outcome.breakdown[0].criterion == "title"
+    assert outcome.breakdown[0].matched is True
+
+    # persisted, not just returned — a fresh lookup sees the same score.
+    refetched = await service.get_by_id(db_session, contact_id)
+    assert refetched["icp_score"] == 100.0

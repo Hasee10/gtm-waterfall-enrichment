@@ -2,8 +2,8 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from ...infrastructure.dependencies import AsyncSessionDep
 from ..common.utils.error_handler import handle_exception
-from .dependencies import ContactServiceDep, WaterfallServiceDep
-from .schemas import ContactBulkImportResult, ContactEnrichResult, ContactRead
+from .dependencies import ContactServiceDep, ICPScoringServiceDep, WaterfallServiceDep
+from .schemas import ContactBulkImportResult, ContactEnrichResult, ContactRead, ContactScoreResult
 
 router = APIRouter(tags=["Contacts"])
 
@@ -48,6 +48,22 @@ async def enrich_contact(
 ) -> ContactEnrichResult:
     try:
         return await contact_service.enrich(db, contact_id, waterfall_service)
+    except Exception as e:
+        http_exception = handle_exception(e)
+        if http_exception:
+            raise http_exception
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+
+
+@router.post("/{contact_id}/score", response_model=ContactScoreResult, summary="Score a contact against the active ICP")
+async def score_contact(
+    contact_id: int,
+    db: AsyncSessionDep,
+    contact_service: ContactServiceDep,
+    scoring_service: ICPScoringServiceDep,
+) -> ContactScoreResult:
+    try:
+        return await contact_service.score(db, contact_id, scoring_service)
     except Exception as e:
         http_exception = handle_exception(e)
         if http_exception:

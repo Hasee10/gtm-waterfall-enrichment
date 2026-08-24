@@ -207,5 +207,46 @@ not a bug).
 patched provider registry — no Docker). Full suite: 111 passed, 3
 skipped, ruff clean, app boots.
 
-Next: Step 5 — ICP scoring logic + endpoint (config-driven weights, not
-hardcoded).
+Step 5 done: ICP scoring, config-driven via a new ICPConfig table
+(src/modules/icp_config/models.py) — same non-hardcoded reasoning as
+WaterfallConfig: tightening or loosening the ICP definition should be a
+DB update, not a deploy. No CRUD endpoint for ICPConfig yet either
+(consistent with WaterfallConfig) — it's seeded directly for now.
+
+Four criteria, each independently optional (None/empty = not
+configured, skipped entirely rather than counted as a miss, so an
+incomplete profile doesn't drag every score toward zero):
+target_industries (comma-separated, matched against Company.industry),
+employee_count_min/max (inclusive range against
+Company.employee_count), target_revenue_ranges (comma-separated,
+matched against Company.revenue_range), title_keywords
+(comma-separated, case-insensitive substring match against
+Contact.title). Each has its own weight; final score is normalized to
+0-100 over only the criteria actually configured (earned/possible *
+100), so a 2-of-4-configured profile isn't unfairly capped.
+
+Scoring logic itself lives in src/services/scoring/icp.py
+(ICPScoringService — services/, not modules/, same reasoning as
+waterfall living in services/enrichment: this is orchestration across
+Contact+Company+ICPConfig, not one vertical-slice CRUD resource).
+Wired into ContactService.score() and exposed as POST
+/api/v1/contacts/{id}/score, which persists the score onto Contact and
+returns the full per-criterion breakdown (not just the number) so a
+caller can see why a contact scored the way it did.
+
+Added the migration (b8207c2e3983, chained onto the step-2 migration)
+the same way as before: autogenerate, then upgrade/downgrade/upgrade
+against a throwaway SQLite db to confirm it's clean. Verified the score
+endpoint end-to-end with a live uvicorn server too — seeded an
+ICPConfig, imported a contact via CSV, scored them, got back a
+correctly partial 50.0 (title keyword matched, industry didn't since
+the company had none set).
+
+13 new unit tests: pure-Python scoring tests (no DB) covering full
+match, no-criteria, partial-match normalization, unconfigured-criterion
+exclusion, no-company, open-ended employee range, and case-insensitive
+title matching; plus service-layer tests for the missing-contact and
+missing-config error paths and for persistence. Full suite: 121 passed,
+3 skipped, ruff clean, app boots.
+
+Next: Step 6 — HubSpot sync service (stubbed until token provided).

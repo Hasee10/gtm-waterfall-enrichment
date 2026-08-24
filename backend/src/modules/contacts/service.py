@@ -5,13 +5,21 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...services.enrichment.waterfall import WaterfallEnrichmentService
+from ...services.scoring.icp import ICPScoringService
 from ..common.enums import FieldType
 from ..common.exceptions import ResourceNotFoundError, ValidationError
 from ..companies.service import CompanyService
 from ..enrichment_jobs.schemas import EnrichmentJobRead
 from .crud import crud_contacts
 from .models import Contact
-from .schemas import ContactBulkImportResult, ContactEnrichResult, ContactImportError, ContactRead
+from .schemas import (
+    ContactBulkImportResult,
+    ContactEnrichResult,
+    ContactImportError,
+    ContactRead,
+    ContactScoreResult,
+    ICPCriterionScoreRead,
+)
 
 REQUIRED_CSV_COLUMNS = {"first_name", "last_name"}
 
@@ -111,4 +119,27 @@ class ContactService:
         return ContactEnrichResult(
             contact=ContactRead.model_validate(contact),
             jobs=[EnrichmentJobRead.model_validate(job) for job in jobs],
+        )
+
+    async def score(self, db: AsyncSession, contact_id: int, scoring_service: ICPScoringService) -> ContactScoreResult:
+        """Scores one contact against the active ICPConfig and persists the result."""
+        contact = await db.get(Contact, contact_id)
+        if not contact:
+            raise ResourceNotFoundError(f"Contact {contact_id} not found")
+
+        config = await scoring_service.get_active_config(db)
+        if config is None:
+            raise ValidationError("No active ICPConfig found — seed one before scoring contacts")
+
+        result = scoring_service.score(contact, config)
+        contact.icp_score = result.score
+
+        await db.commit()
+        await db.refresh(contact)
+
+        return ContactScoreResult(
+            contact=ContactRead.model_validate(contact),
+            breakdown=[
+                ICPCriterionScoreRead(criterion=c.criterion, matched=c.matched, weight=c.weight) for c in result.breakdown
+            ],
         )

@@ -62,3 +62,20 @@ class ContactEnrichResult(BaseModel):
 
     contact: ContactRead
     jobs: list[EnrichmentJobRead]
+
+
+class ICPCriterionScoreRead(BaseModel):
+    """One scored criterion — surfaced so a caller can see *why* a contact
+    scored the way it did, not just the final number.
+    """
+
+    criterion: str
+    matched: bool
+    weight: float
+
+
+class ContactScoreResult(BaseModel):
+    """The contact after ICP scoring, plus the per-criterion breakdown."""
+
+    contact: ContactRead
+    breakdown: list[ICPCriterionScoreRead]
