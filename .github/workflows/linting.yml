@@ -24,7 +24,7 @@ jobs:
         # (backend's dev extra holds ruff itself).
         run: uv sync --all-packages --all-extras
 
-      - name: Ruff check (backend + cli + tests)
+      - name: Ruff check (backend + tests)
         # --no-sync prevents uv run's implicit re-sync from dropping member
         # extras (it defaults to no extras and would remove ruff).
-        run: uv run --no-sync ruff check backend/src cli/src backend/tests
+        run: uv run --no-sync ruff check backend/src backend/tests

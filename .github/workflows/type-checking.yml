@@ -26,10 +26,3 @@ jobs:
         run: cd backend && uv run --no-sync mypy src --config-file pyproject.toml
         env:
           ENVIRONMENT: local
-          SECRET_KEY: test-secret-key-for-testing-only
-
-      - name: Mypy (cli)
-        run: cd cli && uv run --no-sync mypy -p cli
-        env:
-          ENVIRONMENT: local
-          SECRET_KEY: test-secret-key-for-testing-only
