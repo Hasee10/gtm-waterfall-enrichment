@@ -130,5 +130,40 @@ fallback wired in — that env var was only for this one-off migration
 test, not a code change. Full unit suite still 79 passed/3 skipped,
 ruff clean, app boots.
 
-Next: Step 3 — build the waterfall enrichment service with stubbed
-providers (mock mode when no API key is set).
+Step 3 done: built the waterfall enrichment service with stubbed
+providers, under src/services/ (not modules/ — this is orchestration
+logic, not a vertical-slice domain resource). src/services/providers/
+has base.py (BaseProvider ABC + ProviderResult dataclass), hunter.py
+(HunterClient — real email-finder HTTP call implemented, since Hunter's
+API is a single simple endpoint), apollo.py (ApolloClient — mock mode
+covers email/phone/company; live mode is a deliberate TODO stub that
+returns a clear miss rather than silently faking success, since
+Apollo's free tier needs separate endpoints per lookup type that
+weren't safe to build blind without a real key to verify against), and
+registry.py (provider_name string -> client instance, so the waterfall
+never imports a provider class directly). Both clients read
+HUNTER_API_KEY/APOLLO_API_KEY from a new ProviderSettings class — unset
+means mock mode, so the whole thing is testable with zero live keys.
+
+src/services/enrichment/waterfall.py holds WaterfallEnrichmentService:
+for one contact + field_type, it queries enabled WaterfallConfig rows
+in priority order, tries each provider via the registry, logs every
+attempt (hit or miss) as an EnrichmentJob, and stops at the first
+success. On success it writes back onto Contact (email +
+enrichment_status=ENRICHED); on total failure it sets
+enrichment_status=FAILED, but only for the EMAIL field — phone/company
+misses have no matching Contact column to update yet, which is a real
+gap in the current data model (Contact has no phone field), not an
+oversight to silently paper over. The service doesn't commit; same
+convention as the rest of the codebase — the caller (a route, in step
+4) owns the transaction.
+
+Added 22 new unit tests: provider tests use synthetic contacts (no DB),
+Hunter's live-mode HTTP call is tested via a mocked httpx.AsyncClient;
+waterfall tests use an in-memory SQLite engine (not the Docker-gated
+Postgres fixtures) with a patched provider registry for deterministic
+success/fail/disabled-config scenarios. Full suite: 101 passed, 3
+skipped, ruff clean, app boots.
+
+Next: Step 4 — expose endpoints: POST /contacts/bulk (CSV upload), POST
+/contacts/{id}/enrich, GET /contacts/{id}.

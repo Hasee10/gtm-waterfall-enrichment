@@ -208,6 +208,18 @@ class SecuritySettings(BaseSettings):
     SECURITY_HEADERS_ENABLED: bool = config("SECURITY_HEADERS_ENABLED", default=True, cast=bool)
 
 
+class ProviderSettings(BaseSettings):
+    """Enrichment provider credentials.
+
+    Each key defaults to None. A provider client checks its own key at call time:
+    if unset, it runs in mock mode and returns fake data instead of calling the
+    live API, so the waterfall is testable end-to-end before any keys exist.
+    """
+
+    HUNTER_API_KEY: str | None = config("HUNTER_API_KEY", default=None)
+    APOLLO_API_KEY: str | None = config("APOLLO_API_KEY", default=None)
+
+
 class LoggingSettings(BaseSettings):
     """Centralized logging configuration settings."""
 
@@ -288,6 +300,7 @@ class Settings(
     APISettings,
     AppSettings,
     SecuritySettings,
+    ProviderSettings,
     LoggingSettings,
     TaskiqSettings,
 ):
