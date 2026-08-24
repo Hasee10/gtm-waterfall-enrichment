@@ -220,6 +220,16 @@ class ProviderSettings(BaseSettings):
     APOLLO_API_KEY: str | None = config("APOLLO_API_KEY", default=None)
 
 
+class CRMSettings(BaseSettings):
+    """CRM sync credentials.
+
+    Same mock-mode pattern as ProviderSettings: unset means the CRM client
+    returns a fake external id instead of calling the live API.
+    """
+
+    HUBSPOT_PRIVATE_APP_TOKEN: str | None = config("HUBSPOT_PRIVATE_APP_TOKEN", default=None)
+
+
 class LoggingSettings(BaseSettings):
     """Centralized logging configuration settings."""
 
@@ -301,6 +311,7 @@ class Settings(
     AppSettings,
     SecuritySettings,
     ProviderSettings,
+    CRMSettings,
     LoggingSettings,
     TaskiqSettings,
 ):

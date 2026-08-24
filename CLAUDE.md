@@ -249,4 +249,32 @@ title matching; plus service-layer tests for the missing-contact and
 missing-config error paths and for persistence. Full suite: 121 passed,
 3 skipped, ruff clean, app boots.
 
-Next: Step 6 — HubSpot sync service (stubbed until token provided).
+Step 6 done: HubSpot sync service, stubbed until a token is provided —
+same mock-mode pattern as Hunter/Apollo. src/services/crm/base.py has
+BaseCRMClient (mirrors BaseProvider) + CRMSyncResult; src/services/crm/
+hubspot.py has HubSpotClient, reading HUBSPOT_PRIVATE_APP_TOKEN from a
+new CRMSettings class. Live mode does a real POST to HubSpot's
+crm/v3/objects/contacts (implemented properly, like Hunter — it's a
+single simple endpoint, safe to build without a live token to verify
+against). Wired into ContactService.sync_to_crm().
+
+Deliberately NOT wired to a route yet — step 6 in the build order only
+asked for "the sync service," not an endpoint (unlike step 4, which
+named its three routes explicitly). Two real gaps, flagged rather than
+silently papered over: (1) create-only — there's no hubspot_contact_id
+column on Contact, so repeated syncs for the same contact will create
+duplicate CRM records rather than update one; (2) there's no
+"qualified leads only" gate (e.g. icp_score above a threshold) before
+pushing — the project's own framing (README-level: "Syncs qualified
+leads to HubSpot") implies that gate should exist before this is
+exposed as an endpoint. Both are natural fits for whichever future step
+adds the actual /sync-crm route.
+
+8 new unit tests (mock mode, live mode via mocked httpx, HTTP-error
+handling, missing-contact and missing-response-id paths). Full suite:
+129 passed, 3 skipped, ruff clean, app boots. No new migration — no
+schema changes this step.
+
+Next: Step 7 — write README with architecture diagram description
+(Trigger → Waterfall Enrichment → Scoring → CRM Sync) and setup
+instructions.

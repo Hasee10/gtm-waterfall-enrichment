@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...services.crm.base import BaseCRMClient, CRMSyncResult
 from ...services.enrichment.waterfall import WaterfallEnrichmentService
 from ...services.scoring.icp import ICPScoringService
 from ..common.enums import FieldType
@@ -143,3 +144,16 @@ class ContactService:
                 ICPCriterionScoreRead(criterion=c.criterion, matched=c.matched, weight=c.weight) for c in result.breakdown
             ],
         )
+
+    async def sync_to_crm(self, db: AsyncSession, contact_id: int, crm_client: BaseCRMClient) -> CRMSyncResult:
+        """Pushes one contact into the CRM.
+
+        Not wired to a route yet — this is the sync service itself, ready for a
+        future step to gate it behind "qualified leads only" (e.g. icp_score
+        above a threshold) and expose it as an endpoint.
+        """
+        contact = await db.get(Contact, contact_id)
+        if not contact:
+            raise ResourceNotFoundError(f"Contact {contact_id} not found")
+
+        return await crm_client.push_contact(contact)

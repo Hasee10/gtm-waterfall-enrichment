@@ -15,6 +15,7 @@ from src.modules.contacts.enums import EnrichmentStatus
 from src.modules.contacts.service import ContactService
 from src.modules.icp_config.models import ICPConfig
 from src.modules.waterfall_config.models import WaterfallConfig
+from src.services.crm.hubspot import HubSpotClient
 from src.services.enrichment.waterfall import WaterfallEnrichmentService
 from src.services.providers.base import ProviderResult
 from src.services.scoring.icp import ICPScoringService
@@ -173,3 +174,22 @@ async def test_score_persists_result_onto_contact(db_session):
     # persisted, not just returned — a fresh lookup sees the same score.
     refetched = await service.get_by_id(db_session, contact_id)
     assert refetched["icp_score"] == 100.0
+
+
+@pytest.mark.asyncio
+async def test_sync_to_crm_raises_for_missing_contact(db_session):
+    service = ContactService()
+    with pytest.raises(ResourceNotFoundError):
+        await service.sync_to_crm(db_session, 999, HubSpotClient(token=None))
+
+
+@pytest.mark.asyncio
+async def test_sync_to_crm_pushes_contact_in_mock_mode(db_session):
+    service = ContactService()
+    imported = await service.bulk_create_from_csv(db_session, SAMPLE_CSV.encode("utf-8"))
+    contact_id = imported.contacts[0].id
+
+    result = await service.sync_to_crm(db_session, contact_id, HubSpotClient(token=None))
+
+    assert result.success is True
+    assert result.external_id == f"mock-hubspot-{contact_id}"
