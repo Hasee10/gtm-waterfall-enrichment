@@ -165,5 +165,47 @@ Postgres fixtures) with a patched provider registry for deterministic
 success/fail/disabled-config scenarios. Full suite: 101 passed, 3
 skipped, ruff clean, app boots.
 
-Next: Step 4 — expose endpoints: POST /contacts/bulk (CSV upload), POST
-/contacts/{id}/enrich, GET /contacts/{id}.
+Step 4 done: exposed the three endpoints, plus a companies module built
+just far enough to support them (no company endpoints yet — company
+resolution is internal-only, called by ContactService during import).
+
+- src/modules/companies/: schemas.py, crud.py (FastCRUD), service.py
+  (get_or_create_by_domain — domain is the de-dup key, so two contacts
+  at the same company share one row).
+- src/modules/contacts/: schemas.py (ContactRead/Create,
+  ContactBulkImportResult + ContactImportError for row-level failures,
+  ContactEnrichResult), crud.py, service.py, dependencies.py, routes.py.
+- src/modules/enrichment_jobs/schemas.py: EnrichmentJobRead, for
+  serializing the jobs list an enrich call returns.
+- POST /api/v1/contacts/bulk: parses a CSV (first_name, last_name
+  required; email, title, company_domain, company_name optional).
+  Deliberately row-tolerant — a bad row (e.g. missing last_name) is
+  collected into an errors list with its row number, not a reason to
+  reject the whole file. Each row commits independently, so a
+  company_domain repeated across rows resolves to the same Company
+  within one batch.
+- GET /api/v1/contacts/{id}: plain lookup, 404 via ResourceNotFoundError
+  -> handle_exception's existing DomainError mapping (no new exception
+  wiring needed).
+- POST /api/v1/contacts/{id}/enrich: runs WaterfallEnrichmentService
+  across all three FieldTypes (email/phone/company) against one
+  contact, commits, and returns the updated contact + every
+  EnrichmentJob logged.
+
+Verified end-to-end against a throwaway SQLite db with a live uvicorn
+server (not just imports): bulk-imported a 3-row CSV (2 created, 1
+correctly rejected with "first_name and last_name are required" at row
+4, company dedup confirmed — both Acme contacts got the same
+company_id), GET by id returned the right contact, POST .../enrich ran
+Hunter in mock mode and correctly set email + enrichment_status. Also
+confirmed a genuinely-missing contact returns 404 against a live DB
+(separately from a DB-unreachable 500, which is just this sandbox
+having no working local Postgres — same known limitation as steps 1-2,
+not a bug).
+
+10 new unit tests for CompanyService/ContactService (in-memory SQLite,
+patched provider registry — no Docker). Full suite: 111 passed, 3
+skipped, ruff clean, app boots.
+
+Next: Step 5 — ICP scoring logic + endpoint (config-driven weights, not
+hardcoded).

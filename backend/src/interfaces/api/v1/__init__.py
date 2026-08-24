@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/v1")
+from ....modules.contacts.routes import router as contacts_router
 
-# GTM domain routers (contacts, enrichment, scoring, CRM sync) get mounted here
-# in later build steps. Intentionally empty for now.
+router = APIRouter(prefix="/v1")
+router.include_router(contacts_router, prefix="/contacts")
+
+# Scoring and CRM sync routers get mounted here in later build steps.
