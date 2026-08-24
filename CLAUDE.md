@@ -275,6 +275,28 @@ handling, missing-contact and missing-response-id paths). Full suite:
 129 passed, 3 skipped, ruff clean, app boots. No new migration — no
 schema changes this step.
 
-Next: Step 7 — write README with architecture diagram description
-(Trigger → Waterfall Enrichment → Scoring → CRM Sync) and setup
-instructions.
+Step 7 done: rewrote README.md from scratch — the old content was
+entirely the upstream benavlabs boilerplate marketing copy, unrelated
+to this project. New README has an ASCII architecture diagram (Trigger
+→ Waterfall Enrichment → Scoring → CRM Sync), a data model table, the
+current endpoint list, a provider/CRM mock-mode table, setup
+instructions (clone → .env → uv sync → alembic upgrade → seed
+WaterfallConfig/ICPConfig via direct SQL, since neither has a CRUD
+endpoint yet → run), test instructions, deployment notes (no-auth
+warning front and center), and a "Known gaps" section that states the
+real limitations plainly (no WaterfallConfig/ICPConfig CRUD, HubSpot
+sync not routed yet, HubSpot create-only, Contact has no phone column,
+Apollo live mode unimplemented, docs/ still has stale upstream content)
+rather than glossing over them.
+
+Did NOT touch docs/ (the old mkdocs site) — out of this step's literal
+scope ("write README"), flagged in the new README's Known gaps section
+instead, consistent with the project rule about not changing things
+outside what a step explicitly asks for.
+
+This closes out the full build order from this file. All 7 steps are
+done: boilerplate stripped, models + migrations, waterfall service,
+contacts endpoints, ICP scoring, HubSpot sync (unrouted), README.
+Remaining known work is captured above and in the README's Known gaps
+section — future sessions should treat that list as the backlog rather
+than re-deriving it from scratch.
